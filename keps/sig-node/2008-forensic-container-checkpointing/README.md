@@ -191,7 +191,7 @@ tremendously.
 
 #### Container Migration
 
-On of the main use cases for checkpointing and restoring containers is
+One of the main use cases for checkpointing and restoring containers is
 container migration. An open issue asking for container migration in
 Kubernetes exists since 2015: [#3949][migration-issue].
 
@@ -220,16 +220,21 @@ as implemented by CRIU is already used in production today. A prominent example
 is Google as presented at the Linux Plumbers conference in 2018:
 [Task Migration at Scale Using CRIU]<[task-migration]>
 
-If multiple containers are running on one node, checkpoint/restore and thus
-container migration open up the possibility to migrate containers to another
-node in case not enough resources are available on the current node. High
-priority workloads can continue to run if low priority containers are
-migrated to another node. This way, stateful low priority containers do
-not have to restart from scratch but can continue to run on another node.
+If multiple containers are running on the same physical node in a cluster,
+checkpoint/restore, and thus container migration, open up the possibility
+of migrating containers across cluster nodes in case there are not enough
+computational resources (e.g., CPU, memory) available on the current node.
+While high-priority workloads can continue to run on the same node, containers
+with lower priority can be migrated. This way, stateful applications with low
+priority can continue to run on a different node without loosing their progress
+or state.
 
-This might be especially interesting for AI training containers which can be
-preempted for higher priority tasks without having to restart the training
-from the start.
+This functionality is especially valuable in distributed infrastructure services
+for AI workloads, as it helps reduce the cost of AI by maximizing the aggregate
+useful throughput on a given pool with a fixed capacity of hardware accelerators.
+Microsoft's globally distributed scheduling service, [Singularity]<[singularity]>,
+is an example that demonstrates the efficiency and reliability of this mechanism
+with deep learning training and inference workloads.
 
 ##### Spot Instances
 
@@ -243,13 +248,16 @@ continue to run without having to start from the beginning.
 
 ##### Scheduler Integration
 
-All of the above mentioned container migration use cases currently require
-manual checkpointing, manual transfer of the checkpoint archive and manual
-restore of the container (see [Forensic Container Checkpointing
-Alpha][kubernetes-blog-post] for details). If all these steps could automatically
-be performed by the scheduler this would greatly improve the user experience.
-Scheduler integration, however, is probably one use case which will be
-implemented at the very end and something for future enhancements.
+All of the above-mentioned container migration use cases currently require manual
+checkpointing, manual transfer of the checkpoint archive, and manual restoration
+of the container (see [Forensic Container Checkpointing Alpha][kubernetes-blog-post]
+for details). If all these steps could be automatically performed by the scheduler,
+it would greatly improve the user experience and enable more efficient resource
+utilization. For example, the scheduler could transparently checkpoint, preempt,
+and migrate workloads across nodes while keeping track of available resources and
+identifying suitable nodes (with compatible hardware accelerators) where a container
+can be migrated. However, scheduler integration is likely to be implemented at a later
+stage and is a subject for future enhancements.
 
 ### Risks and Mitigations
 
@@ -549,5 +557,6 @@ information only available by working closely with runtimes and engines.
 [kubernetes-blog-post]: https://kubernetes.io/blog/2022/12/05/forensic-container-checkpointing-alpha/
 [migration-issue]: https://github.com/kubernetes/kubernetes/issues/3949
 [task-migration]: https://lpc.events/event/2/contributions/69/attachments/205/374/Task_Migration_at_Scale_Using_CRIU_-_LPC_2018.pdf
+[singularity]: https://arxiv.org/abs/2202.07848
 [kubectl-checkpoint]: https://github.com/kubernetes/kubernetes/pull/120898
 [checkpoint-management]: https://github.com/kubernetes/kubernetes/pull/115888
